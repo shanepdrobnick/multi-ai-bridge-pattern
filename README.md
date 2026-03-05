@@ -18,7 +18,7 @@ Modern AI development tools fall into two categories that don't talk to each oth
 
 The result is engineers bouncing between tools with no coordination layer — manually translating between a design conversation and an implementation task, burning tokens on both sides, and losing fidelity every time.
 
-**There's also a token problem.** Creative AI sessions are expensive and finite. You don't want to spend senior engineer tokens on boilerplate. You don't want to spend ten IDE AI iterations getting to something the senior engineer could have specified in one message.
+**There's also a token problem.** Creative AI sessions are expensive and finite. You don't want to spend tokens on boilerplate. You don't want to spend ten IDE AI iterations getting to something the Creative AI could have specified in one message.
 
 ---
 
