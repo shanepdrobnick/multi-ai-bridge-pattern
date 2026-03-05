@@ -179,6 +179,66 @@ You cannot use a scalpel to design a hospital. You cannot use an architect to pe
 
 ---
 
+## The Economics — Why This Pattern Gets More Important Over Time
+
+### The AI Concorde Problem
+
+Concorde was technically brilliant. It flew passengers faster than anything before or since. It was genuinely revolutionary.
+
+It also never scaled. The economics never worked outside a tiny premium market. It flew for 27 years, served a fraction of the travelling public, and was retired without a successor. The future of aviation wasn't faster planes — it was more efficient ones, carrying more people, more cheaply.
+
+**AI is facing the same problem right now.**
+
+Current AI pricing is widely understood to be loss-leader territory. The major cloud providers and AI labs are subsidising access to drive adoption and lock in enterprise agreements. The $20-60/month plans that individual developers pay do not cover the true inference cost at serious usage rates. Venture capital and corporate subsidy is effectively paying for everyone's tokens.
+
+When that normalises — and it will — the economics change hard.
+
+Enterprise customers with volume agreements will absorb some of the increase. Large companies will restructure workflows around the new costs. But **the solo developer, the indie studio, the small team without enterprise agreements** — they'll feel it first and most severely. The current accessible pricing is not a permanent feature of the landscape.
+
+### Why Token Efficiency Becomes a Survival Skill
+
+This pattern was originally designed for quality — using each AI tool for what it does best. But its deeper value is **token budget management.**
+
+Every element of the pattern has an economic justification:
+
+| Pattern Element | Quality Benefit | Economic Benefit |
+|----------------|-----------------|------------------|
+| Creative AI for architecture only | Better decisions | Expensive tokens on high-value work only |
+| IDE AI for implementation | Faster execution | Cheap tokens on mechanical work |
+| `ai_instructions.json` spec file | No translation loss | Eliminates repeated explanation — you explain once, not ten times |
+| `project_sync.py` context tool | Full context instantly | Minimises context reconstruction cost each session |
+| Explicit `do_not_touch` rules | Prevents regressions | Prevents costly fix-what-the-AI-broke cycles |
+| Task status tracking | Clear progress | Prevents duplicate work across sessions |
+
+The pattern essentially creates a **two-tier AI cost architecture** without requiring any special tooling — just discipline about which questions go to which tier.
+
+### The Independent Developer's Survival Strategy
+
+As AI pricing normalises toward real costs, the developers who survive and thrive will be the ones who:
+
+1. **Know which problems need expensive AI** — architecture, complex debugging, novel system design, creative judgment
+2. **Know which problems need cheap AI** — boilerplate, refactoring, syntax, mechanical implementation
+3. **Have a coordination layer** so the expensive AI's decisions compound through the cheap AI's execution
+4. **Minimise context reconstruction** — the most wasteful token spend is re-explaining what the AI already knew last session
+
+This is not a temporary workaround for current tooling limitations. It is a durable economic pattern for any two-tier AI ecosystem where one tier is expensive and thoughtful and one tier is cheap and fast. The specific tools today are almost irrelevant — Claude, Cursor, GPT-4, Copilot — the economic structure is what matters and that structure is not going away.
+
+The indie developer who masters AI token efficiency in 2026 is the same developer who will still be able to afford AI tools in 2028 when the subsidies have ended and everyone else is complaining about the price.
+
+### Who This Is For
+
+This pattern was designed specifically for:
+- **Solo developers** using multiple AI tools without enterprise agreements
+- **Small teams** on tight token budgets who need to get the most from every session
+- **Independent creators** working on complex projects that need both creative depth and mechanical breadth
+- **Any developer** who has noticed that expensive AI is brilliant but finite, and cheap AI is fast but shallow, and wanted a way to make them work together
+
+The big enterprise with unlimited AI budget doesn't need this pattern. They can afford to waste tokens.
+
+**You probably can't. This is for you.**
+
+---
+
 ## Origin
 
 This pattern emerged during the development of a Python/Arcade space game — a project complex enough to require both deep architectural thinking (AI behaviour systems, spatial audio design, vector graphics pipelines) and substantial mechanical implementation (data structures, file I/O, Arcade 3.x API compatibility).
