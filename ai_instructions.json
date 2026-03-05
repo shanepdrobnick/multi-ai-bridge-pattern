@@ -1,0 +1,235 @@
+{
+  "_meta": {
+    "written_by": "Claude (Senior Engineer)",
+    "read_by": "Cursor / Copilot (Implementation)",
+    "purpose": "Machine-readable task specifications. Claude writes these. Junior AI reads and implements exactly as specified. Do not deviate from spec without checking with Claude first.",
+    "version": "1.0",
+    "last_updated": "session_start"
+  },
+
+  "_conventions": {
+    "arcade_version": "3.x",
+    "python_version": "3.10+",
+    "coordinate_system": "Arcade default — Y up, origin bottom-left screen",
+    "local_ship_space": "Origin = ship centre, Y up, 0 degrees = facing up",
+    "data_pattern": "Data-driven. No hardcoded geometry. Load from JSON via load_library()",
+    "file_format": "Category JSON files: ships.json, stations.json, derelicts.json, junk.json",
+    "arcade_breaking_changes": [
+      "Window.__init__ does NOT accept background_color= kwarg. Use arcade.set_background_color() separately.",
+      "draw_rectangle_filled(cx,cy,w,h) is REMOVED. Use draw_lrbt_rectangle_filled(left,right,bottom,top)",
+      "draw_rectangle_outline(cx,cy,w,h) is REMOVED. Use draw_lrbt_rectangle_outline(left,right,bottom,top)",
+      "SpriteCircle manual __init__ fails. Use arcade.make_circle_texture(diameter, color) instead.",
+      "OpenGLFramebuffer.clear() takes color=(r,g,b,a) kwarg not positional args."
+    ],
+    "style": {
+      "no_hardcoded_geometry": true,
+      "data_files_are_source_of_truth": true,
+      "all_effects_use_glow_passes": "3 passes: (width*4, alpha*0.12), (width*2, alpha*0.45), (width*0.6, alpha*1.0)",
+      "no_magic_numbers": "Use named constants",
+      "push_back_if_spec_seems_wrong": true
+    }
+  },
+
+  "_architecture": {
+    "module_map": {
+      "vector_ships.py":       "Geometry dataclasses + VectorShipRenderer + load_library(). DO NOT add hardcoded geometry here.",
+      "vector_editor.py":      "Standalone Arcade editor app. Saves to category JSON files.",
+      "warp_effects.py":       "WarpEffectManager — elongation/vortex/fold + Picard Manoeuvre",
+      "destruction_effects.py":"DestructionManager — DebrisLine, ShockwaveRing, ToxicCloud, ExplosionEvent",
+      "screen_effects.py":     "ScreenShake (trauma model), GUITrauma, TrailManager",
+      "damage_model.py":       "DamageModel — 3 layer (shields/armour/hull), 8 damage types, DoT, regen",
+      "ship_data.py":          "PlayerShip, ShipSystem, LayerStats, DamageType dataclasses",
+      "player_hud.py":         "WorldSpaceHUD (world space bars), ScreenSpaceHUD (corner panel)",
+      "ai_controller.py":      "AIController — weighted behaviour scoring, faction logic, formation flying",
+      "ai_data.py":            "Faction, Behaviour, Condition, ShipTypeData, FactionData enums + dataclasses",
+      "ai_scorer.py":          "BehaviourScorer — evaluates conditions, selects behaviour per frame",
+      "ai_spawner.py":         "SpawnManager — encounter templates, formation spawning",
+      "galaxy_generator.py":   "Voronoi galaxy generation with faction territories",
+      "galaxy_data.py":        "GalaxyMap, StarNodeData, HyperlaneData, region profiles",
+      "weapon_effects.py":     "EffectManager — projectiles, beams, shockwaves, bloom renderer",
+      "weapon_effects_data.py":"EFFECTS dict — all weapon profiles. Add new weapons here as data not code.",
+      "weapon_shaders.py":     "GLSL shader source strings. Do not edit unless instructed by Claude.",
+      "sound_manager.py":      "PLANNED — spatial audio, distance attenuation, doppler, layered drones",
+      "builtin_ships.json":    "5 built-in race geometries. colonial/machine/pirate/hive/syndicate",
+      "ships.json":            "Editor-created ships. Loaded at runtime via load_library()",
+      "stations.json":         "Editor-created stations.",
+      "derelicts.json":        "Editor-created derelicts.",
+      "junk.json":             "Editor-created space junk."
+    },
+    "startup_sequence": [
+      "from vector_ships import load_libraries, SHIP_GEOMETRIES",
+      "load_libraries('builtin_ships.json', 'ships.json', 'stations.json', 'derelicts.json', 'junk.json')"
+    ],
+    "do_not_touch": [
+      "weapon_shaders.py — GLSL only, Claude handles this",
+      "ai_scorer.py scoring weights — behaviour balance is deliberate",
+      "damage_model.py interaction matrix — damage type interactions are designed"
+    ]
+  },
+
+  "tasks": {
+    "_note": "Claude writes tasks here. Cursor implements them. Mark status as you go.",
+
+    "TASK_001": {
+      "status": "pending",
+      "priority": "high",
+      "title": "Wire load_libraries() into game startup",
+      "assigned_to": "cursor",
+      "description": "Add library loading to the main game entry point so all JSON geometry files are loaded before any ship is spawned.",
+      "files_to_edit": ["game_example.py"],
+      "exact_change": {
+        "add_near_top": [
+          "from vector_ships import load_libraries, SHIP_GEOMETRIES",
+          "import os"
+        ],
+        "add_in_setup_or_init": [
+          "_data_dir = os.path.dirname(os.path.abspath(__file__))",
+          "load_libraries(",
+          "    os.path.join(_data_dir, 'builtin_ships.json'),",
+          "    os.path.join(_data_dir, 'ships.json') if os.path.exists(os.path.join(_data_dir, 'ships.json')) else '',",
+          "    os.path.join(_data_dir, 'stations.json') if os.path.exists(os.path.join(_data_dir, 'stations.json')) else '',",
+          ")"
+        ]
+      },
+      "test": "Print len(SHIP_GEOMETRIES) after load — should be >= 5",
+      "do_not": "Do not hardcode paths. Use os.path relative to __file__."
+    },
+
+    "TASK_002": {
+      "status": "pending",
+      "priority": "high",
+      "title": "Connect VectorShipRenderer to AIShip drawing",
+      "assigned_to": "cursor",
+      "description": "AIShip currently draws as a circle. Replace with VectorShipRenderer using the ship's race_id to pick geometry from SHIP_GEOMETRIES.",
+      "files_to_edit": ["ai_spawner.py"],
+      "logic": [
+        "Import VectorShipRenderer from vector_ships",
+        "Add _renderer = VectorShipRenderer() as class or module level singleton",
+        "In DemoAIShip draw or the game draw loop, call _renderer.draw_ship(ship.center_x, ship.center_y, angle_radians, geometry_id)",
+        "geometry_id lookup: use RACE_TO_GEOMETRY dict defined below",
+        "angle: AIShip stores angle in degrees — convert to radians: math.radians(ship.angle)"
+      ],
+      "constants_to_add": {
+        "RACE_TO_GEOMETRY": {
+          "colonial":  "colonial_fighter",
+          "machine":   "machine_corvette",
+          "pirate":    "pirate_raider",
+          "hive":      "hive_drone",
+          "syndicate": "syndicate_interceptor"
+        }
+      },
+      "test": "Run vector_demo.py — ships should render as vector geometry not circles",
+      "do_not": "Do not remove the arcade.Sprite base class yet — physics still uses it"
+    },
+
+    "TASK_003": {
+      "status": "pending",
+      "priority": "medium",
+      "title": "Wire DestructionManager to ship death",
+      "assigned_to": "cursor",
+      "description": "When an AIShip health reaches 0, trigger DestructionManager.destroy_ship() with the ship's position, angle and geometry_id.",
+      "files_to_edit": ["ai_spawner.py", "game_example.py"],
+      "logic": [
+        "Import DestructionManager from destruction_effects",
+        "Create a single DestructionManager instance in the game window __init__",
+        "In AIShip.take_damage(), when health <= 0 call: dest_mgr.destroy_ship(x, y, angle_rad, geometry_id, velocity=(vx,vy))",
+        "In game on_update(), call: dest_mgr.update(dt) and check returned shockwaves for damage",
+        "In game on_draw(), call: dest_mgr.draw() BEFORE drawing live ships"
+      ],
+      "shockwave_damage_check": [
+        "for sw in dest_mgr.update(dt):",
+        "    for ship in all_ships:",
+        "        if sw.hits(ship.center_x, ship.center_y, id(ship)):",
+        "            ship.take_damage(sw.damage_at(0), None)"
+      ],
+      "do_not": "Do not call destroy_ship more than once per death. Use a died flag on the ship."
+    },
+
+    "TASK_004": {
+      "status": "pending",
+      "priority": "medium",
+      "title": "Add ScreenShake to explosion events",
+      "assigned_to": "cursor",
+      "description": "Wire ScreenShake to explosion and shockwave events so the camera shakes on impact.",
+      "files_to_edit": ["game_example.py"],
+      "logic": [
+        "Import ScreenShake from screen_effects",
+        "Create shake = ScreenShake() in game __init__",
+        "In game on_update(), call shake.update(dt)",
+        "When a ship dies: shake.add_trauma(0.6)",
+        "When player takes a hit: shake.add_trauma(0.4 * damage_fraction)",
+        "When Hive suicidal shockwave hits player: shake.add_trauma(1.0)",
+        "Apply offset in on_draw() — see note below"
+      ],
+      "camera_offset_note": "Arcade 3.x camera: get ox,oy = shake.get_offset() then translate drawing with arcade camera or manual offset. Ask Claude if unsure about camera API.",
+      "do_not": "Do not apply shake offset to HUD elements — only world space drawing."
+    },
+
+    "TASK_005": {
+      "status": "pending",
+      "priority": "low",
+      "title": "Add engine trails to all ships",
+      "assigned_to": "cursor",
+      "description": "Register each ship with TrailManager and update position each frame.",
+      "files_to_edit": ["game_example.py", "ai_spawner.py"],
+      "logic": [
+        "Import TrailManager from screen_effects",
+        "Create trails = TrailManager() in game __init__",
+        "On ship spawn: trails.register_engine(id(ship), ENGINE_COLORS[race_id], width=2.0)",
+        "In on_update(): trails.update_engine(id(ship), ship.center_x, ship.center_y, alive=ship.alive, dt=dt)",
+        "In on_update(): trails.update(dt)",
+        "In on_draw(): trails.draw() BEFORE drawing ships"
+      ],
+      "constants_to_add": {
+        "ENGINE_COLORS": {
+          "colonial":  [60, 140, 255],
+          "machine":   [160, 200, 255],
+          "pirate":    [255, 100, 40],
+          "hive":      [120, 255, 100],
+          "syndicate": [180, 100, 255]
+        }
+      }
+    }
+  },
+
+  "known_issues": {
+    "ISSUE_001": {
+      "status": "open",
+      "file": "vector_editor.py",
+      "description": "Editor local space (Y up, origin centre) may not match game world space. Scale factor TBD after first test run.",
+      "fix_owner": "Claude — will specify exact transform after seeing editor output vs game coordinates"
+    },
+    "ISSUE_002": {
+      "status": "open",
+      "file": "ai_spawner.py",
+      "description": "DemoAIShip still uses circle texture fallback. Blocked on TASK_002.",
+      "fix_owner": "cursor — see TASK_002"
+    }
+  },
+
+  "design_decisions": {
+    "_note": "These are final. Do not change without discussing with Claude.",
+    "energy_system": {
+      "description": "Three interconnected pools: weapons, shields, drive. All draw from one POWER_CORE that regenerates. Solar proximity boosts regen rate. Not yet implemented — Claude will spec this fully.",
+      "status": "designed, not implemented"
+    },
+    "nemesis": {
+      "description": "Unknown faction. Predates all races. ~2% spawn chance in deep red space nodes. No energy system — does not run out. First encounter is designed to be survived only by running. Sound: ambient drone shifts on detection.",
+      "status": "designed, not implemented",
+      "do_not": "Do not implement this without full spec from Claude. Too many systems involved."
+    },
+    "hive_suicidal_drones": {
+      "description": "Hive drone death triggers shockwave + acid cloud. Hive ships immune to own clouds. Implemented in hive_drone geometry (death_shockwave_radius=80, toxic_cloud_type=acid).",
+      "status": "implemented in vector_ships + destruction_effects"
+    },
+    "warp_styles_by_race": {
+      "colonial":  "elongation",
+      "machine":   "elongation",
+      "pirate":    "fold",
+      "hive":      "fold",
+      "syndicate": "vortex"
+    },
+    "combat_feel_reference": "Subspace / Continuum — fast, momentum-based, readable feedback, ships feel physically distinct",
+    "sound_target": "Elite Dangerous level spatial audio — distance attenuation, stereo pan, doppler shift, layered engine drones"
+  }
+}
